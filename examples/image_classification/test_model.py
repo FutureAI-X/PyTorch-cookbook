@@ -3,30 +3,48 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 from neural_network import NeuralNetwork
-from data_loader import get_test_dataloader
+from data_loader import get_test_data
 
-test_dataloader = get_test_dataloader(batch_size=64)
-    
+# 数据集加载
+test_data = get_test_data()
+test_data_len = len(test_data)
+labels_map = {
+    0: "T-Shirt",
+    1: "Trouser",
+    2: "Pullover",
+    3: "Dress",
+    4: "Coat",
+    5: "Sandal",
+    6: "Shirt",
+    7: "Sneaker",
+    8: "Bag",
+    9: "Ankle Boot",
+}
+
+# 模型加载
+current_folder = current_file = Path(__file__).resolve().parent
 model = NeuralNetwork()
-model.load_state_dict(torch.load('model_weights.pth', weights_only=True))
-softmax = nn.Softmax(dim=1)
+model.load_state_dict(torch.load(f'{current_folder}/model_weights.pth', weights_only=True))
+model.eval()
 
-def test_loop(dataloader, model):
-    # Set the model to evaluation mode - important for batch normalization and dropout layers
-    # Unnecessary in this situation but added for best practices
-    model.eval()
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    test_loss, correct = 0, 0
+# 执行测试
+figure = plt.figure(figsize=(8, 8))
+for i in range(1, 10):
+    # 从数据集中随机获取一条数据
+    sample_idx = torch.randint(test_data_len, size=(1,)).item()
+    img, label = test_data[sample_idx]
 
-    # Evaluating the model with torch.no_grad() ensures that no gradients are computed during test mode
-    # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
-    with torch.no_grad():
-        for X, y in dataloader:
-            pred = model(X)
-            pred_probab = softmax(pred)
-            print(f"pred: {pred_probab}, actual:{y}")
+    # 执行预测并输出
+    logits = model(img)
+    pred = logits.argmax(1).item()
 
-test_loop(test_dataloader, model)
+    # 绘制图片
+    figure.add_subplot(3, 3, i)
+    plt.title(f"{labels_map[label]}, {labels_map[pred]}")
+    plt.axis("off")
+    plt.imshow(img.squeeze(), cmap="gray")
+plt.show()

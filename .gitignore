@@ -1,1 +1,4 @@
 .vscode
+pytorch_cookbook.egg-info
+*.pth
+__pycache__/
